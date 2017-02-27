@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "http://ibatis.apache.org/dtd/sql-map-2.dtd" "-//ibatis.apache.org//DTD SQL Map 2.0//EN">
+<sqlMap namespace="messagestatus">
+	
+ 
+ <!--新增任务对应服务调用实例  -->
+	<insert id="ADD_STATUS" parameterClass="com.ailk.eaap.o2p.model.SubMessageStatus">
+	        <selectKey resultClass="int" keyProperty="subId">
+				SELECT nextval('SEQ_SUB_ID');
+			</selectKey>
+	  INSERT INTO SUB_MESSAGE_STATUS
+	  (SUB_ID
+	  <dynamic >
+	    <isNotNull prepend="," property="subTaskId">SUB_TASK_ID</isNotNull>
+	    <isNotNull prepend="," property="subMesId">SUB_MES_ID</isNotNull>
+	    <isNotNull prepend="," property="subSerInsId">SUB_SER_INS_ID</isNotNull>
+	    <isNotNull prepend="," property="subEndpointId">SUB_ENDPOINT_ID</isNotNull>
+	    <isNotNull prepend="," property="subContentType">SUB_CONTENT_TYPE</isNotNull>
+	    <isNotNull prepend="," property="subContent">SUB_CONTENT</isNotNull>
+	    <isNotNull prepend="," property="subStatus">SUB_STATUS</isNotNull>
+	    <isNotNull prepend="," property="subDate">SUB_DATE</isNotNull>
+	    <isNotNull prepend="," property="subNextDate">SUB_NEXT_DATE</isNotNull>
+	    <isNotNull prepend="," property="subTimeNum">SUB_TIME_NUM</isNotNull>
+	    <isNotNull prepend="," property="createDate">CREATE_DATE</isNotNull>
+	    <isNotNull prepend="," property="hostName">HOST_NAME</isNotNull>
+	  </dynamic>
+	  )
+	  values
+	  (#subId#
+	   <dynamic >
+	    <isNotNull prepend="," property="subTaskId">#subTaskId#</isNotNull>
+	    <isNotNull prepend="," property="subMesId">#subMesId#</isNotNull>
+	    <isNotNull prepend="," property="subSerInsId">#subSerInsId#</isNotNull>
+	    <isNotNull prepend="," property="subEndpointId">#subEndpointId#</isNotNull>
+	    <isNotNull prepend="," property="subContentType">#subContentType#</isNotNull>
+	    <isNotNull prepend="," property="subContent">#subContent#</isNotNull>
+	    <isNotNull prepend="," property="subStatus">#subStatus#</isNotNull>
+	    <isNotNull prepend="," property="subNextDate">#subNextDate#</isNotNull>
+	    <isNotNull prepend="," property="subTimeNum">#subTimeNum#</isNotNull>
+	    <isNotNull prepend="," property="subDate">#subDate#</isNotNull>
+	    <isNotNull prepend="," property="createDate">#createDate#</isNotNull>
+	    <isNotNull prepend="," property="hostName">#hostName#</isNotNull>
+	   </dynamic>
+	  )
+	</insert>
+	
+	
+	
+</sqlMap>	

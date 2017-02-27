@@ -1,0 +1,170 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+						http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.5.xsd
+       					http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd">
+	<bean id="file.taskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor" init-method="initialize">
+		<property name="corePoolSize" value="${JMSLIS.TASKEXECUTOR.corePoolSize}"/>
+		<property name="maxPoolSize" value="${JMSLIS.TASKEXECUTOR.maxPoolSize}"/>
+		<property name="queueCapacity" value="${JMSLIS.TASKEXECUTOR.queueCapacity}"/>
+		<property name="keepAliveSeconds" value="120"/>
+		<property name="waitForTasksToCompleteOnShutdown" value="true"/>
+	</bean>
+	<bean id="jms.MessageConverter" class="org.springframework.jms.support.converter.SimpleMessageConverter"></bean>
+    <bean id="JMS.ConnectionFactory" class="org.apache.activemq.pool.PooledConnectionFactory">
+    	<property name="connectionFactory"> 
+    		<bean class="org.apache.activemq.ActiveMQConnectionFactory">
+		        <property name="brokerURL">
+		            <value>${JMS.brokerURL}</value>
+		        </property>
+		        <property name="userName">
+		            <value>${JMS.userName}</value>
+		        </property>
+		        <property name="password">
+		            <value>${JMS.password}</value>
+		        </property>
+				<property name="trustAllPackages" value="true"/>  
+		     </bean>
+        </property>  
+         <!-- 最大连接数 -->
+		<property name="maxConnections" >
+			<value>${JMS.consumerNum}</value>
+		</property>
+		<property name="idleTimeout" value="${JMS.idleTimeout}"></property>                         
+		<property name="createConnectionOnStartup" value="${JMS.createConnectionOnStartup}"></property>
+		<property name="expiryTimeout" value="${JMS.expiryTimeout}"></property>
+    </bean>	
+    <!-- 发送消息的目的地（一个队列） -->
+    <bean id="subQueueDestination" class="org.apache.activemq.command.ActiveMQQueue">  
+       <constructor-arg>  
+            <value>${AMQ.FV2Queue}</value>
+        </constructor-arg>
+    </bean>    
+
+	<bean id="jms.FV2.ListenerContainer" 
+		class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+		<property name="autoStartup" value="false"/>
+		<property name="maxConcurrentConsumers" value="${JMSLIS.maxConcurrentConsumers}"/>
+		<property name="maxMessagesPerTask" value="${JMSLIS.maxMessagesPerTask}"/>
+		<property name="receiveTimeout" value="${JMSLIS.receiveTimeout}"/>
+		<property name="taskExecutor" ref="file.taskExecutor"/>
+		<property name="connectionFactory" ref="JMS.ConnectionFactory"/>
+		<property name="messageListener" ref="FV2.messageListener"></property>
+		<property name="sessionTransacted" value="false"></property>
+		<property name="idleTaskExecutionLimit" value="5"></property>
+		<property name="destinationName" value="${AMQ.FV2Queue}"></property>
+	</bean>  
+
+	<bean id="FE.ListenerContainer" 
+		class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+		<property name="autoStartup" value="false"/>
+		<property name="maxConcurrentConsumers" value="${FE.JMSLIS.maxConcurrentConsumers}"/>
+		<property name="maxMessagesPerTask" value="${FE.JMSLIS.maxMessagesPerTask}"/>
+		<property name="receiveTimeout" value="${FE.JMSLIS.receiveTimeout}"/>
+		<property name="taskExecutor" ref="fe.taskExecutor"/>
+		<property name="connectionFactory" ref="JMS.ConnectionFactory"/>
+		<property name="messageListener" ref="fileExceptionListener"></property>
+		<property name="destinationName" value="${exception.activemq.exceptionDestination}"></property>
+	</bean> 
+	
+	<bean id="FV2.messageListener" class="com.ailk.eaap.o2p.jms.FileJmsListener">
+		<property name="routeServ" ref="RouteServ"></property>
+		<property name="messageLogService" ref="messageLogService"></property>
+		<property name="cacheService" ref="cacheService"></property>
+		<property name="messageConverter" ref="jms.MessageConverter"></property>
+		<property name="taskCacheService" ref="taskCacheService"></property>
+		<property name="destinationName" value="${AMQ.FV2Queue}"></property>
+	</bean>     
+	
+	<bean id="fileExceptionListener" class="com.ailk.eaap.o2p.jms.FileExceptionJmsListener">
+		<property name="routeServ" ref="RouteServ"></property>
+		<property name="messageConverter" ref="jms.MessageConverter"></property>
+		<property name="messageLogService" ref="messageLogService"></property>
+		<property name="serviceExchangeService" ref="ServiceExchangeService"></property>
+		<property name="reTryExceptionDealInfoMessage" ref="reTryDealExceptionMessage"></property>
+	</bean>
+
+	<bean id="fe.taskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor" init-method="initialize">
+		<property name="corePoolSize" value="${FE.TASKEXECUTOR.corePoolSize}"/>
+		<property name="maxPoolSize" value="${FE.TASKEXECUTOR.maxPoolSize}"/>
+		<property name="queueCapacity" value="${FE.TASKEXECUTOR.queueCapacity}"/>
+		<property name="keepAliveSeconds" value="120"/>
+		<property name="waitForTasksToCompleteOnShutdown" value="true"/>
+	</bean>
+    <bean id="exceptionDestination" class="org.apache.activemq.command.ActiveMQQueue">  
+        <constructor-arg index="0" >
+       		<value>${exception.activemq.exceptionDestination}</value>
+        </constructor-arg>  
+    </bean>
+    <bean id="fileEx.AmqCon"  class="org.apache.activemq.ActiveMQConnectionFactory"> 
+        	<property name="brokerURL">
+	            <value>${JMS.brokerURL}</value>
+	        </property>
+	        <property name="userName">
+	            <value>${JMS.userName}</value>
+	        </property>
+	        <property name="password">
+	            <value>${JMS.password}</value>
+	        </property>  
+	        <property name="useAsyncSend">
+	        	<value>true</value>
+	        </property>
+    </bean>     
+    <bean id="fileEx.cachingConnectionFactory" class="org.springframework.jms.connection.CachingConnectionFactory">
+    	<property name="sessionCacheSize" value="10"></property>
+    	<property name="targetConnectionFactory" ref="fileEx.AmqCon"></property>
+    </bean>
+	<bean id="JmsTemplate4FileEx" class="org.springframework.jms.core.JmsTemplate"> 
+	    <property name="connectionFactory" ref="fileEx.cachingConnectionFactory"></property> 
+	    <property name="defaultDestinationName" value="${exception.activemq.exceptionDestination}"></property>
+	</bean> 
+	    
+	
+	<!-- activeMQ消息目标 队列 -->  
+    <bean id="dealExceptionDestination" class="org.apache.activemq.command.ActiveMQQueue">  
+        <constructor-arg index="0" >
+       		<value>${dealException.activemq.exceptionDestination}</value>
+        </constructor-arg>  
+    </bean> 
+	<bean id="JmsTemplate4DealEx" class="org.springframework.jms.core.JmsTemplate"> 
+	    <property name="connectionFactory" ref="fileEx.cachingConnectionFactory"></property> 
+	    <property name="defaultDestinationName" value="${dealException.activemq.exceptionDestination}"></property>
+	</bean>
+	
+      <!-- 异常捕获AOP  -->
+     <bean id="exceptionAspect" class="com.ailk.eaap.op2.serviceagent.aop.ExceptionAspect">
+     	<property name="messageBoHisSer"><ref bean="messageBoHisSer"/></property>
+     	<property name="exceptionJmsTempldate"><ref bean="JmsTemplate4FileEx"/></property>
+     	<property name="dealExceptionJmsTemplate"><ref bean="JmsTemplate4DealEx"/></property>
+     	<property name="taskCacheService" ref="taskCacheService"></property>
+     	<property name="exceptionTryNum">
+     		<value>
+     			${exception.tryNum}
+     		</value>
+     	</property>
+     </bean>
+     
+    <aop:config>
+        <aop:aspect ref="exceptionAspect">
+            <aop:pointcut id="exceptionTry" expression="execution(* com.ailk.eaap.op2.serviceagent.route.service.ServiceExchangeService.exchange(..))"/>
+            <aop:after-throwing pointcut-ref="exceptionTry" method="throwingExchange" throwing="ex" /> 
+        </aop:aspect>
+     </aop:config>
+	<!-- activeMQ消息目标 队列 -->  
+    <bean id="reTryDealExceptionDestination" class="org.apache.activemq.command.ActiveMQQueue">  
+        <constructor-arg index="0" >
+       		<value>${reTryDealException.activemq.exceptionDestination}</value>
+        </constructor-arg>  
+    </bean> 
+    
+	<bean id="reTryDealExceptionJmsTemplate" class="org.springframework.jms.core.JmsTemplate"> 
+	    <property name="connectionFactory" ref="JMS.ConnectionFactory"></property> 
+	</bean> 
+   
+   <bean id="reTryDealExceptionMessage" class="com.ailk.eaap.op2.serviceagent.activemq.ActivemqMessageUtil"> 
+	    <property name="jmsTemplate" ref="reTryDealExceptionJmsTemplate"/> 
+	    <property name="destination"  ref="reTryDealExceptionDestination"/>
+	</bean> 	 	 
+</beans>
